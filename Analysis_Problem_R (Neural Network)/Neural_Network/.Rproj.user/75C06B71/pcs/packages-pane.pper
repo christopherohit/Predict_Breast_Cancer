@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": false,
+        "libraryPath": "D:/ZZZ Program File/R-4.0.5/library",
+        "installDependencies": true
+    }
+}
