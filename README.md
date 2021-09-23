@@ -12,7 +12,7 @@
   - Đinh Hữu Thanh Nguyên     -5951071065
 
 
-* Giảng viên hướng dẫn:  Thầy Trần Phong Nhã
+* Giảng viên hướng dẫn:  Th.s Trần Phong Nhã
 
 
 * Lớp: Công nghệ thông tin-K59
