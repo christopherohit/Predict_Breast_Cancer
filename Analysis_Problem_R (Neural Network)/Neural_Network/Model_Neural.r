@@ -43,6 +43,7 @@ prop.table(table(df$diagnosis))
 corr_mat <- cor(df[,3:ncol(df)])
 corrplot(corr_mat,order = "hclust",t1.cex = 1 , addrect = 8)
 
+
 set.seed(1234)
 
 
@@ -121,3 +122,91 @@ cm_nb_train <- confusionMatrix(pred_nb_train , train_df$diagnosis , positive = "
 cm_nb_test <- confusionMatrix(pred_nb_test , test_df$diagnosis , positive =  "M")
 cm_nb_train
 cm_nb_test
+
+# Linear Discriminal Analysis
+model_lda <- train(diagnosis~.,
+                   train_data,
+                   method = "lda2",
+                   metric = "ROC",
+                   preProcess = c('center', 'scale'),
+                   trControl = fit_control)
+pred_lda_train <- predict(model_lda , train_data)
+pred_lda_test <- predict(model_lda , test_data)
+cm_lda_train <- confusionMatrix(pred_lda_train , train_data$diagnosis, positive = "M")
+cm_lda_test <- confusionMatrix(pred_lda_test, test_data$diagnosis , positive ="M")
+cm_lda_train
+cm_lda_test
+pred_prod_lda <- predict(model_lda, test_data ,type = "prob")
+roc_lda <- roc(test_data$diagnosis , pred_prod_lda$M)
+plot(roc_lda)
+colAUC(pred_prod_lda, test_data$diagnosis, plotROC = TRUE)
+
+# SVM
+
+model_svm <- train(diagnosis~.,
+                   train_df,
+                   method="svmRadial",
+                   metric="ROC",
+                   preProcess=c('center', 'scale'),
+                   trace=FALSE,
+                   trControl=fit_control)
+
+pred_svm_train <- predict(model_svm , train_df) # Check train
+pred_svm_test <- predict(model_svm, test_df) # Check test
+cm_svm_train <- confusionMatrix(pred_svm_train , train_df$diagnosis , positive = "M")
+cm_svm_test <- confusionMatrix(pred_svm_test , test_df$diagnosis , positive =  "M")
+cm_svm_train
+cm_svm_test
+
+# Random Forest
+
+model_rf <- train(diagnosis~.,
+                  train_df,
+                  method="ranger",
+                  metric="ROC",
+                  tuneLength=10,
+                  #tuneGrid = expand.grid(mtry = c(2, 3, 6)),
+                  preProcess = c('center', 'scale'),
+                  trControl=fit_control)
+
+pred_rf_train <- predict(model_rf , train_df) # Check train
+pred_rf_test <- predict(model_rf, test_df) # Check test
+cm_rf_train <- confusionMatrix(pred_rf_train , train_df$diagnosis , positive = "M")
+cm_rf_test <- confusionMatrix(pred_rf_test , test_df$diagnosis , positive =  "M")
+cm_rf_train
+cm_rf_test
+
+
+
+# Model comparasion
+
+model_list <- list(RF = model_rf, NNET = model_nnet , KNN = model_knn,
+                   SVM = model_svm , LDA = model_lda , NB = model_nb
+                   )
+result_list <- resamples(model_list)
+
+model_cor <- modelCor(result_list)
+corrplot(model_cor)
+model_cor
+
+
+#Plot comparasion
+bwplot(result_list,metric = "ROC")
+
+
+#Comparasion on confusion Matrix
+cp_list <- list(RF = cm_rf_test, NNET = cm_nnet , KNN = cm_knn_test ,
+                SVM = cm_svm_test , LDA = cm_lda_test , NB = cm_nb_test
+                )
+cp_list_result <- sapply(cp_list , function(x) x$byClass)
+cp_list_result
+
+cm_result_max <- apply(cp_list_result, 1 ,which.max)
+
+output_report <- data.frame(metric = names(cm_result_max),
+                            best_model = colnames(cp_list_result)[cm_result_max],
+                            value = mapply(function(x,y) {cp_list_result[x,y]},
+                                           names(cm_result_max),
+                                           cm_result_max))
+rownames(output_report) <- NULL
+output_report
